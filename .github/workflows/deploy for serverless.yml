@@ -1,0 +1,51 @@
+name: 部署到腾讯云函数
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+    
+    strategy:
+      matrix:
+        node-version: [12]
+        node-registry: ['https://registry.npmjs.org']
+    #设置变量
+    env:
+      user: ${{ secrets.user}}		#手机号
+      password: ${{ secrets.password}}      #服务密码
+      appid: ${{ secrets.appid}}		#手机登陆营业厅后在sdcard/Unicom/appid文件里直接复制
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.repository }}
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: "安装依赖和 serverless 工具"
+        run: |
+          sudo npm install
+          sudo npm install -g tough-cookie --unsafe-perm=true --allow-root
+          sudo npm install serverless -g
+      - name: "将Secrets里面配置的变量添加到severless.yml里面作为环境变量"
+        run: |
+          if [ $user ]; then sed -i "/variables/a\      user: $user" serverless.yml; fi;
+          if [ $password ]; then sed -i "/variables/a\      password: $password" serverless.yml; fi;
+          if [ $appid ]; then sed -i "/variables/a\      appid: $appid" serverless.yml; fi;      
+          cat serverless.yml
+          env
+        
+      - name: "部署到腾讯云函数"
+        run: sls deploy --debug
+        env:
+          STAGE: Peng
+          SERVERLESS_PLATFORM_VENDOR: tencent
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}

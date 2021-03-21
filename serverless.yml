@@ -1,0 +1,26 @@
+#组件信息
+app: unicom2
+component: scf # (必填) 引用 component 的名称，当前用到的是 tencent-scf 组件
+name: Unicom # (必填) 创建的实例名称，请修改成您的实例名称
+
+#联通自动操作脚本
+inputs:
+  name: ${app}-Task #函数名称
+  #namespace: unicom
+  enableRoleAuth: true # 默认会尝试创建 SCF_QcsRole 角色，如果不需要配置成 false 即可
+  src: ./  #代码路径
+  handler: tscf.main_handler #入口
+  runtime: Nodejs12.16 # 云函数运行时的环境
+  region: ap-hongkong # 云函数所在区域
+  description: '联通营业厅任务脚本'
+  timeout: 900
+  events: # 触发器
+    - timer: # 定时触发器
+        name: timer-${name} #触发器名称，默认timer-${name}-${stage}
+        parameters:
+          cronExpression: '*/30 7-23 * * *'
+          enable: true
+  environment: #  环境变量
+    variables: #  环境变量对象
+      cmd=unicom
+      AAA: BBB # 不要删除，用来格式化对齐追加的变量的
